@@ -11,7 +11,7 @@ django.setup()
 
 from crypto_analytics.models import Trade
 
-BUFFER_SIZE = 10
+BUFFER_SIZE = 100
 
 # buffer to hold stream data
 stream_buffer = queue.Queue(maxsize=BUFFER_SIZE)
