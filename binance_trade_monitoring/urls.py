@@ -15,7 +15,9 @@ Including another URLconf
 """
 from django.urls import path
 from django.contrib import admin
+from crypto_analytics import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/crypto/price/<str:symbol>/', views.get_latest_price)
 ]
