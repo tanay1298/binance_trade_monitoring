@@ -48,9 +48,7 @@ def test_get_latest_price_no_trade_records(monkeypatch):
     response = get_latest_price(request, symbol='BTC')
 
     assert response.status_code == 404
-    response_data = json.loads(response.content)
-    assert response_data == {'success': False, 'message': 'No trade records found for symbol BTC.'}
-
+    assert response.content == b'No trade records found for symbol BTC.'
 
 @pytest.mark.django_db
 def test_get_historical_price_data():
@@ -84,8 +82,8 @@ def test_get_historical_price_data_invalid_date_format():
     response = get_historical_price_data(request)
 
     assert response.status_code == 400
-    response_data = json.loads(response.content)
-    assert response_data['error'] == 'Invalid date format. Please use YYYY-MM-DD HH:MM:SS.'
+    assert response.content == b'Invalid date format. Please use YYYY-MM-DD HH:MM:SS.'
+
 
 @pytest.mark.django_db
 def test_perform_statistical_analysis():
@@ -149,7 +147,7 @@ def test_perform_statistical_analysis():
 
 
 @pytest.mark.django_db
-def test_perform_statistical_analysis_negative():
+def test_perform_statistical_analysis_not_found():
     Trade.objects.create(
         trade_id=735823038,
         symbol='BTC',
@@ -169,7 +167,4 @@ def test_perform_statistical_analysis_negative():
     response = perform_statistical_analysis(request)
 
     assert response.status_code == 404
-
-    expected_data = {'error': 'No historical data found for symbol ETH.'}
-    response_data = json.loads(response.content)
-    assert response_data == expected_data
+    assert response.content == b'No historical data found for symbol ETH.'
