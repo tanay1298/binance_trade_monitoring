@@ -5,6 +5,8 @@ from django.shortcuts import render
 from crypto_analytics.models import Trade
 from django.http import JsonResponse
 from datetime import datetime
+from django.db.models import Avg, StdDev
+from statistics import median
 
 def get_latest_price(request, symbol):
     # Get latest trade record for the specified symbol
@@ -37,3 +39,19 @@ def get_historical_price_data(request):
     historical_data = Trade.objects.filter(trade_completed_time__range=(start_timestamp, end_timestamp)).values('trade_completed_time', 'price')
     serialized_data = [{'timestamp': entry['trade_completed_time'], 'price': entry['price']} for entry in historical_data]
     return JsonResponse({'data': serialized_data})
+
+def perform_statistical_analysis(request):
+    symbol = request.GET.get('symbol')
+    historical_data = Trade.objects.filter(symbol=symbol).values('price')
+    average_price = historical_data.aggregate(avg_price=Avg('price'))['avg_price']
+    prices = [entry['price'] for entry in historical_data]
+    median_price = median(prices)
+    std_dev = historical_data.aggregate(std_dev=StdDev('price'))['std_dev']
+
+    statistical_analysis = {
+        'symbol': symbol,
+        'average_price': average_price,
+        'median_price': median_price,
+        'standard_deviation': std_dev
+    }
+    return JsonResponse(statistical_analysis)
