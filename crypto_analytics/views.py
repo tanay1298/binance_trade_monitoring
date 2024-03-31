@@ -75,9 +75,18 @@ def get_historical_price_data(request):
 def perform_statistical_analysis(request):
     symbol = request.GET.get('symbol')
     historical_data = Trade.objects.filter(symbol=symbol).values('price')
+
+    if not historical_data:
+        return JsonResponse({'error': f'No historical data found for symbol {symbol}.'}, status=404)
+
     average_price = historical_data.aggregate(avg_price=Avg('price'))['avg_price']
     prices = [entry['price'] for entry in historical_data]
-    median_price = median(prices)
+
+    try:
+        median_price = median(prices)
+    except StatisticsError as e:
+        median_price = None
+
     std_dev = historical_data.aggregate(std_dev=StdDev('price'))['std_dev']
 
     statistical_analysis = {
