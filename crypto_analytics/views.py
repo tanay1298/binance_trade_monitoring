@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-from django.shortcuts import render
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
 from rest_framework.decorators import api_view, renderer_classes
 from crypto_analytics.models import Trade
-from django.http import JsonResponse
 from datetime import datetime
 from django.db.models import Avg, StdDev
-from statistics import median
+from statistics import median, StatisticsError
 from drf_yasg.utils import swagger_auto_schema
 from .serializers import LatestPriceSerializer, ErrorResponseSerializer, HistoricalPriceSerializer, StatisticalAnalysisSerializer
 
@@ -22,6 +18,9 @@ from .serializers import LatestPriceSerializer, ErrorResponseSerializer, Histori
 )
 @api_view(['GET'])
 def get_latest_price(request, symbol):
+    if not symbol:
+        return HttpResponseBadRequest('Symbol is required.')
+    
     latest_trade = Trade.objects.filter(symbol=symbol).order_by('-event_time').first()
 
     if latest_trade:
@@ -32,7 +31,7 @@ def get_latest_price(request, symbol):
         }
         return JsonResponse({'success': True, 'data': data})
     else:
-        return JsonResponse({'success': False, 'message': f'No trade records found for symbol {symbol}.'}, status=404)
+        return HttpResponseNotFound(f'No trade records found for symbol {symbol}.')
 
 @swagger_auto_schema(
     method='get',
@@ -48,11 +47,14 @@ def get_historical_price_data(request):
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
 
+    if not start_date_str or not end_date_str:
+        return HttpResponseBadRequest('Start date and end date are required.')
+
     try:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d %H:%M:%S')
     except ValueError:
-        return JsonResponse({'error': 'Invalid date format. Please use YYYY-MM-DD HH:MM:SS.'}, status=400)
+        return HttpResponseBadRequest('Invalid date format. Please use YYYY-MM-DD HH:MM:SS.')
 
     # Convert datetime objects to Unix timestamps
     start_timestamp = int(start_date.timestamp() * 1000.0)
@@ -68,16 +70,19 @@ def get_historical_price_data(request):
     operation_description='Performs statistical analysis on the historical price data for the specified symbol.',
     responses={
         200: StatisticalAnalysisSerializer,
-        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
     }
 )
 @api_view(['GET'])
 def perform_statistical_analysis(request):
     symbol = request.GET.get('symbol')
+    if not symbol:
+        return HttpResponseBadRequest('Symbol is required.')
+
     historical_data = Trade.objects.filter(symbol=symbol).values('price')
 
     if not historical_data:
-        return JsonResponse({'error': f'No historical data found for symbol {symbol}.'}, status=404)
+        return HttpResponseNotFound(f'No historical data found for symbol {symbol}.')
 
     average_price = historical_data.aggregate(avg_price=Avg('price'))['avg_price']
     prices = [entry['price'] for entry in historical_data]
