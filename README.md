@@ -24,7 +24,6 @@ git@github.com:tanay1298/binance_trade_monitoring.git
 - For `settings_local.py`
   - set `DEBUG=True` if not set, for all loggings on console
 
-## Setup outside docker using virtualenv
 
 ```bash
 # install virtual environment
@@ -64,6 +63,48 @@ python manage.py migrate
 deactivate
 
 ```
+
+Database Design Documentation:
+=========
+[db_design](db_design.md)
+
+
+Technical Overview
+=======
+
+1. Fetch Trade data from Binance for cryptocurrency pairs
+
+```bash
+python -m crypto_analytics.utils
+```
+2. Fetch Current price of selected cryptocurrency
+
+```bash
+/api/crypto/price/{symbol}
+```
+
+3. Retrieve historical price data within a user-specified date range.
+
+```bash
+/api/historical-price/?start_date={start_date}&end_date={end_date}
+```
+
+4. Ftech statistical data for selected cryptocurreny
+
+```bash
+localhost:8000/api/statistical-data?symbol={symbol}
+```
+
+Unit Tests
+=======
+```bash
+pytest crypto_analytics/tests.py
+```
+
+
+API Documentation
+========
+[Swagger](/swagger)
 
 Logging:
 ========
