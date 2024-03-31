@@ -8,17 +8,15 @@ services:
   - type: web
     plan: starter
     name: binance-trade-monitoring
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: "binance_trade_monitoring.settings"
-      - key: DJANGO_ALLOWED_HOSTS
-        value: "*"
-    buildCommand: "python manage.py collectstatic --noinput"
+    runtime: python
+    buildCommand: "./build.sh"
     startCommand: "gunicorn binance_trade_monitoring.wsgi:application --bind 0.0.0.0:8080"
-    healthCheckPath: "/health-check/"
-    healthCheckType: http
-    disk: 256
-    instanceClass: starter
-    automaticDeployment:
-      branch: main
-      enabled: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mysitedb
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
