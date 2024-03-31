@@ -2,14 +2,26 @@
 from __future__ import unicode_literals
 
 from django.shortcuts import render
+from rest_framework.decorators import api_view, renderer_classes
 from crypto_analytics.models import Trade
 from django.http import JsonResponse
 from datetime import datetime
 from django.db.models import Avg, StdDev
 from statistics import median
+from drf_yasg.utils import swagger_auto_schema
+from .serializers import LatestPriceSerializer, ErrorResponseSerializer, HistoricalPriceSerializer, StatisticalAnalysisSerializer
 
+@swagger_auto_schema(
+    method='get',
+    operation_summary='Get latest price for a symbol',
+    operation_description='Returns the latest trade record for the specified symbol.',
+    responses={
+        200: LatestPriceSerializer,
+        404: ErrorResponseSerializer,
+    }
+)
+@api_view(['GET'])
 def get_latest_price(request, symbol):
-    # Get latest trade record for the specified symbol
     latest_trade = Trade.objects.filter(symbol=symbol).order_by('-event_time').first()
 
     if latest_trade:
@@ -22,6 +34,16 @@ def get_latest_price(request, symbol):
     else:
         return JsonResponse({'success': False, 'message': f'No trade records found for symbol {symbol}.'}, status=404)
 
+@swagger_auto_schema(
+    method='get',
+    operation_summary='Get historical price data',
+    operation_description='Returns historical price data for the specified time range.',
+    responses={
+        200: HistoricalPriceSerializer,
+        400: ErrorResponseSerializer,
+    }
+)
+@api_view(['GET'])
 def get_historical_price_data(request):
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
@@ -40,6 +62,16 @@ def get_historical_price_data(request):
     serialized_data = [{'timestamp': entry['trade_completed_time'], 'price': entry['price']} for entry in historical_data]
     return JsonResponse({'data': serialized_data})
 
+@swagger_auto_schema(
+    method='get',
+    operation_summary='Perform statistical analysis',
+    operation_description='Performs statistical analysis on the historical price data for the specified symbol.',
+    responses={
+        200: StatisticalAnalysisSerializer,
+        400: ErrorResponseSerializer,
+    }
+)
+@api_view(['GET'])
 def perform_statistical_analysis(request):
     symbol = request.GET.get('symbol')
     historical_data = Trade.objects.filter(symbol=symbol).values('price')

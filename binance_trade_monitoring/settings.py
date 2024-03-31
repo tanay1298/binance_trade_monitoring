@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'drf_yasg',
     'crypto_analytics',
     'django.contrib.admin',
     'django.contrib.auth',
