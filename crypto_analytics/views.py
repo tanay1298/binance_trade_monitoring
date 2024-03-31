@@ -6,6 +6,9 @@ from django.db.models import Avg, StdDev
 from statistics import median, StatisticsError
 from drf_yasg.utils import swagger_auto_schema
 from .serializers import LatestPriceSerializer, ErrorResponseSerializer, HistoricalPriceSerializer, StatisticalAnalysisSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 @swagger_auto_schema(
     method='get',
@@ -19,6 +22,7 @@ from .serializers import LatestPriceSerializer, ErrorResponseSerializer, Histori
 @api_view(['GET'])
 def get_latest_price(request, symbol):
     if not symbol:
+        logger.error("Symbol is required.")
         return HttpResponseBadRequest('Symbol is required.')
     
     latest_trade = Trade.objects.filter(symbol=symbol).order_by('-event_time').first()
@@ -31,6 +35,7 @@ def get_latest_price(request, symbol):
         }
         return JsonResponse({'success': True, 'data': data})
     else:
+        logger.warning(f"No trade records found for symbol {symbol}")
         return HttpResponseNotFound(f'No trade records found for symbol {symbol}.')
 
 @swagger_auto_schema(
@@ -48,12 +53,14 @@ def get_historical_price_data(request):
     end_date_str = request.GET.get('end_date')
 
     if not start_date_str or not end_date_str:
+        logger.error("Start date and end date are required.")
         return HttpResponseBadRequest('Start date and end date are required.')
 
     try:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d %H:%M:%S')
     except ValueError:
+        logger.error("Invalid date format provided.")
         return HttpResponseBadRequest('Invalid date format. Please use YYYY-MM-DD HH:MM:SS.')
 
     # Convert datetime objects to Unix timestamps
@@ -77,11 +84,13 @@ def get_historical_price_data(request):
 def perform_statistical_analysis(request):
     symbol = request.GET.get('symbol')
     if not symbol:
+        logger.error("Symbol is required.")
         return HttpResponseBadRequest('Symbol is required.')
 
     historical_data = Trade.objects.filter(symbol=symbol).values('price')
 
     if not historical_data:
+        logger.warning(f"No historical data found for symbol {symbol}")
         return HttpResponseNotFound(f'No historical data found for symbol {symbol}.')
 
     average_price = historical_data.aggregate(avg_price=Avg('price'))['avg_price']
@@ -90,6 +99,7 @@ def perform_statistical_analysis(request):
     try:
         median_price = median(prices)
     except StatisticsError as e:
+        logger.error(f"Error calculating median: {e}")
         median_price = None
 
     std_dev = historical_data.aggregate(std_dev=StdDev('price'))['std_dev']
