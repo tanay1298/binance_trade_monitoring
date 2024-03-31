@@ -92,7 +92,7 @@ python -m crypto_analytics.utils
 4. Ftech statistical data for selected cryptocurreny
 
 ```bash
-localhost:8000/api/statistical-data?symbol={symbol}
+/api/statistical-data?symbol={symbol}
 ```
 
 Unit Tests
