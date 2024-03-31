@@ -19,5 +19,6 @@ from crypto_analytics import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/crypto/price/<str:symbol>/', views.get_latest_price)
+    path('api/crypto/price/<str:symbol>/', views.get_latest_price),
+    path('api/historical-price/', views.get_historical_price_data),
 ]
